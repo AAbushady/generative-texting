@@ -1,5 +1,8 @@
 # This is a fork of the Generative Texting mod for Cyberpunk 2077 by @jmtokx
-# This fork adds support for Aphrodite Engine, which allows for self hosted LLMs to be used with the mod.
+## This fork adds support for Aphrodite Engine, which allows for self hosted LLMs to be used with the mod.
+If you'd like to get a hold of me, I'm deadly.salty.pinecone on discord.
+
+-------------------------------------------------------------------------------------------------------------------------
 
 # Generative Texting
 
