@@ -1,3 +1,6 @@
+# This is a fork of the Generative Texting mod for Cyberpunk 2077 by @jmtokx
+# This fork adds support for Aphrodite Engine, which allows for self hosted LLMs to be used with the mod.
+
 # Generative Texting
 
 This mod integrates open-source language models to allow real-time, personalized texting with NPCs like Panam Palmer and Judy Alvarez.
