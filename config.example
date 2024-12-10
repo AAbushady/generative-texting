@@ -1,0 +1,9 @@
+public class GenerativeTextingConfig {
+    public static func GetApiKey() -> String {
+        return "YOUR_API_KEY_HERE";
+    }
+
+    public static func GetAphroditeBaseUrl() -> String {
+        return "YOUR_APHRODITE_BASE_URL_HERE";
+    }
+}

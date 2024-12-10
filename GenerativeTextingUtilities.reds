@@ -1,10 +1,27 @@
-// Replace this with your own API key from https://stablehorde.net/register for faster response times
+// Get API key based on the selected provider
 public func GetApiKey() -> String {
-    return "0000000000";
+    let key = GenerativeTextingConfig.GetApiKey();
+    if Equals(StrLen(key), 0) || Equals(key, "YOUR_API_KEY_HERE") {
+        return "0000000000";
+    }
+    return key;
 }
 
+// Kept for backward compatibility, now just calls GetApiKey()
 public func GetOpenAiApiKey() -> String {
-    return "0000000000";
+    return GetApiKey();
+}
+
+public func GetAphroditeBaseUrl() -> String {
+    let url = GenerativeTextingConfig.GetAphroditeBaseUrl();
+    if Equals(StrLen(url), 0) || Equals(url, "YOUR_APHRODITE_BASE_URL_HERE") {
+        return "http://localhost:8000";
+    }
+    // Remove trailing slash if present
+    if StrEndsWith(url, "/") {
+        return StrLeft(url, StrLen(url) - 1);
+    }
+    return url;
 }
 
 // Get the character's full display name
@@ -191,7 +208,8 @@ enum PlayerGender {
 
 enum LLMProvider {
     StableHorde = 0,
-    OpenAI = 1
+    OpenAI = 1,
+    Aphrodite = 2
 }
 
 enum PlayerLanguage {

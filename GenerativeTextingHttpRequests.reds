@@ -13,6 +13,7 @@ public class HttpRequestSystem extends ScriptableSystem {
   private let phoneController: wref<NewHudPhoneGameController>;
   private let systemPrompt: String;
   private let systemPromptRomance: String;
+  private let aphroditeModel: String = "";
   public let vMessages: array<String>;
   public let npcResponses: array<String>;
 
@@ -21,6 +22,9 @@ public class HttpRequestSystem extends ScriptableSystem {
   private func OnAttach() {
     this.m_callbackSystem = GameInstance.GetCallbackSystem();
     this.m_callbackSystem.RegisterCallback(n"Session/Ready", this, n"OnSessionReady");
+    if Equals(GetTextingSystem().aiModel, LLMProvider.Aphrodite) {
+      this.FetchAphroditeModels();
+    }
   }
 
   private func OnDetach() {
@@ -47,6 +51,9 @@ public class HttpRequestSystem extends ScriptableSystem {
         break;
       case LLMProvider.OpenAI:
         this.OpenAiPostRequest(playerMessage);
+        break;
+      case LLMProvider.Aphrodite:
+        this.AphroditePostRequest(playerMessage);
         break;
     }
   }
@@ -91,6 +98,40 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     AsyncHttpClient.Post(callback, "https://api.openai.com/v1/chat/completions", jsonRequest.ToString(), headers);
     ConsoleLog("== OpenAI POST Request ==");
+    ConsoleLog(s"\(jsonRequest.ToString("\t"))");
+    this.ToggleIsGenerating(true);
+  }
+
+  // Aphrodite Post Request
+  private func AphroditePostRequest(playerMessage: String) {
+    if Equals(GetApiKey(), "0000000000") {
+      ConsoleLog("API key not set. Please update your API key in config.reds and try again.");
+      this.HandleMessage("[ERROR CODE: 5002] - YOUR MESSAGE COULD NOT BE SENT. PLEASE UPDATE YOUR API KEY IN CONFIG.REDS AND TRY AGAIN.");
+      return;
+    }
+
+    let requestDTO = this.BuildOpenAIMessages(playerMessage);
+    // Use dynamically fetched model if available, otherwise fallback to default
+    if StrLen(this.aphroditeModel) > 0 {
+      requestDTO.model = this.aphroditeModel;
+    } else {
+      requestDTO.model = "gpt-3.5-turbo";
+      ConsoleLog("Using default model: gpt-3.5-turbo");
+    }
+    
+    let jsonRequest = ToJson(requestDTO);
+    
+    let callback = HttpCallback.Create(this, n"OnOpenAIResponse");
+    let headers: array<HttpHeader> = [
+        HttpHeader.Create("Content-Type", "application/json"),
+        HttpHeader.Create("Authorization", "Bearer " + GetApiKey())
+    ];
+
+    let url = GetAphroditeBaseUrl() + "/v1/chat/completions";
+    ConsoleLog(s"Sending request to: \(url)");
+    ConsoleLog(s"Using model: \(requestDTO.model)");
+    AsyncHttpClient.Post(callback, url, jsonRequest.ToString(), headers);
+    ConsoleLog("== Aphrodite POST Request ==");
     ConsoleLog(s"\(jsonRequest.ToString("\t"))");
     this.ToggleIsGenerating(true);
   }
@@ -140,7 +181,7 @@ public class HttpRequestSystem extends ScriptableSystem {
   /// Callbacks ///
   private cb func StableHordePostResponse(response: ref<HttpResponse>) {
     ConsoleLog("== API POST Response ==");
-    if !Equals(response.GetStatus(), 202) {
+    if !Equals(response.GetStatusCode(), 202) {
         ConsoleLog(s"Request failed, status code: \(response.GetStatusCode())");
         let json = response.GetJson();
         ConsoleLog(s"\(json.ToString("\t"))");
@@ -447,6 +488,57 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     requestDTO.messages = messagesArray;
     return requestDTO;
+  }
+
+  // Fetch available models from Aphrodite
+  private func FetchAphroditeModels() {
+    let callback = HttpCallback.Create(this, n"OnAphroditeModelsResponse");
+    let headers: array<HttpHeader> = [
+        HttpHeader.Create("Content-Type", "application/json"),
+        HttpHeader.Create("Authorization", "Bearer " + GetApiKey())
+    ];
+    
+    let url = GetAphroditeBaseUrl() + "/v1/models";
+    ConsoleLog(s"Fetching models from: \(url)");
+    AsyncHttpClient.Get(callback, url, headers);
+  }
+
+  private cb func OnAphroditeModelsResponse(response: ref<HttpResponse>) {
+    ConsoleLog("== Aphrodite Models Response ==");
+    ConsoleLog(s"Status code: \(response.GetStatusCode())");
+    
+    if !Equals(response.GetStatusCode(), 200) {
+        ConsoleLog("Failed to fetch models - will use default model");
+        this.aphroditeModel = "gpt-3.5-turbo";
+        return;
+    }
+
+    let json = response.GetJson();
+    if json.IsUndefined() {
+        ConsoleLog("Failed to parse models JSON - will use default model");
+        this.aphroditeModel = "gpt-3.5-turbo";
+        return;
+    }
+
+    ConsoleLog(s"Response: \(json.ToString("\t"))");
+
+    let responseObj = json as JsonObject;
+    let models = responseObj.GetKey("data") as JsonArray;
+    
+    if IsDefined(models) {
+      let firstModel = models.GetItem(0u);
+      if IsDefined(firstModel) {
+        let modelObj = firstModel as JsonObject;
+        if IsDefined(modelObj) {
+          this.aphroditeModel = modelObj.GetKeyString("id");
+          ConsoleLog(s"Selected Aphrodite model: \(this.aphroditeModel)");
+          return;
+        }
+      }
+    }
+    
+    ConsoleLog("No models found - will use default model");
+    this.aphroditeModel = "gpt-3.5-turbo";
   }
 } 
 
