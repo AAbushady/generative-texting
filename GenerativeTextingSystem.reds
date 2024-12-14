@@ -68,11 +68,6 @@ public class GenerativeTextingSystem extends ScriptableService {
     public let language: PlayerLanguage = PlayerLanguage.English;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
-    @runtimeProperty("ModSettings.displayName", "Romance")
-    @runtimeProperty("ModSettings.description", "Controls whether the responses are predisposed to romance.")
-    public let romance: Bool = false;
-
-    @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Temperature")
     @runtimeProperty("ModSettings.description", "Controls the randomness of the generated text. Lower = more predictable, higher = more random.")
     @runtimeProperty("ModSettings.step", "0.1")

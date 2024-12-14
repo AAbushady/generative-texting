@@ -412,11 +412,9 @@ public class HttpRequestSystem extends ScriptableSystem {
   // Build the system prompt based on the selected character and relationship
   private func GetSystemPrompt() -> String {
     let character = GetTextingSystem().character;
-    let romance = GetTextingSystem().romance;
-
     let guidelines = GetGuidelines();
 
-    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character, romance) + "\n " + guidelines;
+    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character) + "\n " + guidelines;
 
     return this.systemPrompt;    
   }
