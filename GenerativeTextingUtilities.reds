@@ -103,13 +103,13 @@ public func IsCharacterRomanced(character: CharacterSetting) -> Bool {
 
     switch character {
         case CharacterSetting.Panam:
-            return questSystem.GetFact(n"q115_panam_romance_chosen") > 0;
+            return questSystem.GetFact(n"panam_relationship") > 0;
         case CharacterSetting.Judy:
-            return questSystem.GetFact(n"q115_judy_romance_chosen") > 0;
+            return questSystem.GetFact(n"judy_relationship") > 0;
         case CharacterSetting.River:
-            return questSystem.GetFact(n"q115_river_romance_chosen") > 0;
+            return questSystem.GetFact(n"river_relationship") > 0;
         case CharacterSetting.Kerry:
-            return questSystem.GetFact(n"q115_kerry_romance_chosen") > 0;
+            return questSystem.GetFact(n"sq028_kerry_relationship") > 0;
         default:
             return false;
     }
