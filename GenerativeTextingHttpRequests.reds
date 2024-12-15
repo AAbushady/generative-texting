@@ -391,32 +391,36 @@ public class HttpRequestSystem extends ScriptableSystem {
     GetTextingSystem().UpdateInputUi();
   }
 
-  // Generate the prompt using the arrays
-  public func GeneratePrompt(playerInput: String) -> String {
-    let promptText = this.GetSystemPrompt() + "\n\n";
-
-    // Concatenate recent exchanges to form the conversation history
-    let i = 0;
-    while i < ArraySize(this.vMessages) {
-      promptText = promptText + "V: " + this.vMessages[i] + "\n";
-      promptText = promptText + GetCharacterLocalizedName(GetTextingSystem().character) + ": " + this.npcResponses[i] + "\n";
-      i += 1;
-    }
-
-    // Add the player’s current message to the prompt
-    promptText += "V: " + playerInput + " <|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n" + GetCharacterLocalizedName(GetTextingSystem().character) + ": ";
-
-    return promptText;
+  // Build the system prompt based on the selected character and relationship
+  private func GetSystemPrompt(character: CharacterSetting, template: ref<PromptTemplate>) -> String {
+    let guidelines = GetGuidelines();
+    return template.system_prefix + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character) + "\n " + guidelines + template.system_suffix;
   }
 
-  // Build the system prompt based on the selected character and relationship
-  private func GetSystemPrompt() -> String {
+  // Generate the prompt using the arrays
+  public func GeneratePrompt(playerInput: String) -> String {
     let character = GetTextingSystem().character;
-    let guidelines = GetGuidelines();
+    let characterName = GetCharacterLocalizedName(character);
+    let promptFormat = GetTextingSystem().promptFormat;
+    let template = PromptTemplate.GetTemplate(promptFormat);
+    let promptText = "";
 
-    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character) + "\n " + guidelines;
+    // Add system message
+    promptText += this.GetSystemPrompt(character, template);
 
-    return this.systemPrompt;    
+    // Add conversation history
+    let i = 0;
+    while i < ArraySize(this.vMessages) {
+        promptText += template.user_prefix + this.vMessages[i] + template.user_suffix;
+        promptText += template.assistant_prefix + characterName + ": " + this.npcResponses[i] + template.assistant_suffix;
+        i += 1;
+    }
+
+    // Add current user message
+    promptText += template.user_prefix + playerInput + template.user_suffix;
+    promptText += template.assistant_prefix + characterName + ": ";
+
+    return promptText;
   }
 
   // Build the post request
@@ -444,12 +448,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     paramsDTO.typical = GetTextingSystem().typical;
     paramsDTO.use_world_info = false;
     paramsDTO.singleline = false;
-    paramsDTO.stop_sequence = [
-      "\nV:", "<|eot_id|>", 
-      "<|start_header_id|>user<|end_header_id|>", 
-      "<|start_header_id|>assistant<|end_header_id|>", 
-      "<|start_header_id|>system<|end_header_id|>"
-    ];
+    paramsDTO.stop_sequence = PromptTemplate.GetTemplate(GetTextingSystem().promptFormat).stop_tokens;
     paramsDTO.streaming = false;
     paramsDTO.can_abort = false;
     paramsDTO.mirostat = 0;

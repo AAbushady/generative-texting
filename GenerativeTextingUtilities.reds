@@ -188,10 +188,10 @@ public func GetGenderedWord(id: Int64) -> String {
 public func GetGuidelines() -> String {
     let aiModel = GetTextingSystem().aiModel;
     switch aiModel {
-      case LLMProvider.StableHorde:
-        return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Let V direct the conversation, avoid changing the subject. Only reply with only the text/dialogue of the next message in the conversation. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
       case LLMProvider.OpenAI:
         return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Try to keep the conversation going but don't feel like you have to end every message with a question, just keep things flowing naturally. Try not to repeat yourself too much. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Only reply with only the text/dialogue of the next message in the conversation. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
+      default:
+        return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Let V direct the conversation, avoid changing the subject. Only reply with only the text/dialogue of the next message in the conversation. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
     }   
 }
 
@@ -210,39 +210,9 @@ public func GetPlayerLanguage() -> String {
             return string + "Italian";
         case PlayerLanguage.Portuguese:
             return string + "Portuguese";
+        default:
+            return string + "English";
     }
-}
-
-enum CharacterSetting {
-  Panam = 0,
-  Judy = 1,
-  River = 2,
-  Kerry = 3,
-  Songbird = 4,
-  Rogue = 5,
-  Viktor = 6,
-  Takemura = 7,
-//   Misty = 8
-}
-
-enum PlayerGender {
-    Male = 0,
-    Female = 1
-}
-
-enum LLMProvider {
-    StableHorde = 0,
-    OpenAI = 1,
-    Aphrodite = 2
-}
-
-enum PlayerLanguage {
-    English = 0,
-    Spanish = 1,
-    French = 2,
-    German = 3,
-    Italian = 4,
-    Portuguese = 5
 }
 
 public func GetTextingSystem() -> ref<GenerativeTextingSystem> {
@@ -289,5 +259,77 @@ public final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> wr
 public static func ConsoleLog(const text: String) {
     if GetTextingSystem().logging {
         FTLog(s"[GenerativeTexting]: \(text)");
+    }
+}
+
+public class PromptTemplate {
+    public let bos_token: String;
+    public let eos_token: String;
+    public let system_prefix: String;
+    public let system_suffix: String;
+    public let user_prefix: String;
+    public let user_suffix: String;
+    public let assistant_prefix: String;
+    public let assistant_suffix: String;
+    public let stop_tokens: array<String>;
+
+    public static func GetTemplate(format: PromptFormat) -> ref<PromptTemplate> {
+        let template = new PromptTemplate();
+        
+        switch format {
+            case PromptFormat.ChatML:
+                template.bos_token = "";
+                template.eos_token = "";
+                template.system_prefix = "<|im_start|>system\n";
+                template.system_suffix = "<|im_end|>\n";
+                template.user_prefix = "<|im_start|>user\n";
+                template.user_suffix = "<|im_end|>\n";
+                template.assistant_prefix = "<|im_start|>assistant\n";
+                template.assistant_suffix = "<|im_end|>\n";
+                template.stop_tokens = [
+                    "\nV:", 
+                    "<|im_start|>",
+                    "<|im_end|>"
+                ];
+                break;
+
+            case PromptFormat.LLaMa3:
+                template.bos_token = "<|begin_of_text|>";
+                template.eos_token = "<|end_of_text|>";
+                template.system_prefix = "<|start_header_id|>system<|end_header_id|>";
+                template.system_suffix = "<|eot_id|>";
+                template.user_prefix = "<|start_header_id|>user<|end_header_id|>";
+                template.user_suffix = "<|eot_id|>";
+                template.assistant_prefix = "<|start_header_id|>assistant<|end_header_id|>";
+                template.assistant_suffix = "<|eot_id|>";
+                template.stop_tokens = [
+                    "\nV:",
+                    "<|start_header_id|>",
+                    "<|end_header_id|>",
+                    "<|eot_id|>",
+                    "<|begin_of_text|>",
+                    "<|end_of_text|>"
+                ];
+                break;
+
+            case PromptFormat.Mistral:
+                template.bos_token = "";
+                template.eos_token = "";
+                template.system_prefix = "";
+                template.system_suffix = "";
+                template.user_prefix = "[INST]";
+                template.user_suffix = "[/INST]";
+                template.assistant_prefix = "";
+                template.assistant_suffix = "</s>";
+                template.stop_tokens = [
+                    "\nV:",
+                    "[INST]",
+                    "[/INST]",
+                    "</s>"
+                ];
+                break;
+        };
+
+        return template;
     }
 }
